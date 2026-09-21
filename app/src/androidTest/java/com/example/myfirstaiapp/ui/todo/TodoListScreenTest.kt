@@ -6,9 +6,11 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasStateDescription
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import com.example.myfirstaiapp.R
 import com.example.myfirstaiapp.data.todo.Todo
 import org.junit.Assert.assertEquals
@@ -128,6 +130,73 @@ class TodoListScreenTest {
     composeTestRule.onNodeWithContentDescription(contentDescription).performClick()
 
     assertEquals(1, added)
+  }
+
+  @Test
+  fun longPress_showsDeleteDialog() {
+    composeTestRule.setContent {
+      TodoListScreen(uiState = TodoListUiState.Success(listOf(TEST_TODO)))
+    }
+
+    composeTestRule.onNodeWithText(TEST_TODO.title).performTouchInput { longClick() }
+
+    val title = composeTestRule.activity.getString(R.string.todo_list_delete_dialog_title)
+    val message =
+      composeTestRule.activity.getString(
+        R.string.todo_list_delete_dialog_message,
+        TEST_TODO.title,
+      )
+    composeTestRule.onNodeWithText(title).assertExists()
+    composeTestRule.onNodeWithText(message).assertExists()
+  }
+
+  @Test
+  fun deleteDialog_confirmInvokesDeleteCallback() {
+    val deleted = mutableListOf<Long>()
+    composeTestRule.setContent {
+      TodoListScreen(
+        uiState = TodoListUiState.Success(listOf(TEST_TODO)),
+        onDelete = { deleted += it },
+      )
+    }
+
+    composeTestRule.onNodeWithText(TEST_TODO.title).performTouchInput { longClick() }
+    val confirm = composeTestRule.activity.getString(R.string.todo_list_delete_dialog_confirm)
+    composeTestRule.onNodeWithText(confirm).performClick()
+
+    assertEquals(listOf(TEST_TODO.id), deleted)
+  }
+
+  @Test
+  fun deleteDialog_dismissDoesNotInvokeDeleteCallback() {
+    val deleted = mutableListOf<Long>()
+    composeTestRule.setContent {
+      TodoListScreen(
+        uiState = TodoListUiState.Success(listOf(TEST_TODO)),
+        onDelete = { deleted += it },
+      )
+    }
+
+    composeTestRule.onNodeWithText(TEST_TODO.title).performTouchInput { longClick() }
+    val dismiss = composeTestRule.activity.getString(R.string.todo_list_delete_dialog_dismiss)
+    composeTestRule.onNodeWithText(dismiss).performClick()
+
+    assertEquals(emptyList<Long>(), deleted)
+  }
+
+  @Test
+  fun longPress_doesNotInvokeOpenCallback() {
+    val opened = mutableListOf<Long>()
+    composeTestRule.setContent {
+      TodoListScreen(
+        uiState = TodoListUiState.Success(listOf(TEST_TODO)),
+        onOpenTodo = { opened += it },
+      )
+    }
+
+    composeTestRule.onNodeWithText(TEST_TODO.title).performTouchInput { longClick() }
+
+    assertEquals(emptyList<Long>(), opened)
   }
 }
 

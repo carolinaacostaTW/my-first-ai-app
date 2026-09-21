@@ -71,4 +71,13 @@ class TodoListViewModelTest {
     advanceUntilIdle()
     assertEquals(listOf(7L to true), repository.setDoneCalls)
   }
+
+  @Test
+  fun deleteById_propagatesToRepository() = runTest(dispatcher) {
+    val repository = FakeTodoRepository(seed = listOf(Todo(id = 7, title = "Buy milk")))
+    val viewModel = TodoListViewModel(repository)
+    viewModel.deleteById(7)
+    advanceUntilIdle()
+    assertEquals(listOf(7L), repository.deletedById)
+  }
 }

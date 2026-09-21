@@ -28,6 +28,10 @@ class TodoListViewModel @Inject constructor(
   fun setDone(id: Long, isDone: Boolean) {
     viewModelScope.launch { todoRepository.setDone(id, isDone) }
   }
+
+  fun deleteById(id: Long) {
+    viewModelScope.launch { todoRepository.deleteById(id) }
+  }
 }
 
 sealed interface TodoListUiState {

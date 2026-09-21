@@ -10,4 +10,8 @@
     <string name="todo_detail_title_label">Title</string>
     <string name="todo_detail_description_label">Description</string>
     <string name="todo_detail_back">Back</string>
+    <string name="todo_list_delete_dialog_title">Delete to-do?</string>
+    <string name="todo_list_delete_dialog_message">Delete "%1$s"?</string>
+    <string name="todo_list_delete_dialog_confirm">Delete</string>
+    <string name="todo_list_delete_dialog_dismiss">Cancel</string>
 </resources>

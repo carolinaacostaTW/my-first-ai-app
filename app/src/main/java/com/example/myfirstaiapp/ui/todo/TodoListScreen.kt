@@ -1,6 +1,6 @@
 package com.example.myfirstaiapp.ui.todo
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,9 +20,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -49,6 +54,7 @@ fun TodoListScreen(
   TodoListScreen(
     uiState = uiState,
     onToggleDone = viewModel::setDone,
+    onDelete = viewModel::deleteById,
     onAddTodo = onAddTodo,
     onOpenTodo = onOpenTodo,
     modifier = modifier,
@@ -63,7 +69,9 @@ internal fun TodoListScreen(
   onToggleDone: (id: Long, isDone: Boolean) -> Unit = { _, _ -> },
   onAddTodo: () -> Unit = {},
   onOpenTodo: (Long) -> Unit = {},
+  onDelete: (Long) -> Unit = {},
 ) {
+  var pendingDelete by remember { mutableStateOf<Todo?>(null) }
   Scaffold(
     modifier = modifier,
     topBar = { TopAppBar(title = { Text(stringResource(R.string.todo_list_title)) }) },
@@ -86,9 +94,34 @@ internal fun TodoListScreen(
           todos = uiState.todos,
           onToggleDone = onToggleDone,
           onOpenTodo = onOpenTodo,
+          onLongPress = { pendingDelete = it },
           modifier = contentModifier,
         )
     }
+  }
+  pendingDelete?.let { todo ->
+    AlertDialog(
+      onDismissRequest = { pendingDelete = null },
+      title = { Text(stringResource(R.string.todo_list_delete_dialog_title)) },
+      text = {
+        Text(stringResource(R.string.todo_list_delete_dialog_message, todo.title))
+      },
+      confirmButton = {
+        TextButton(
+          onClick = {
+            pendingDelete = null
+            onDelete(todo.id)
+          },
+        ) {
+          Text(stringResource(R.string.todo_list_delete_dialog_confirm))
+        }
+      },
+      dismissButton = {
+        TextButton(onClick = { pendingDelete = null }) {
+          Text(stringResource(R.string.todo_list_delete_dialog_dismiss))
+        }
+      },
+    )
   }
 }
 
@@ -129,10 +162,16 @@ private fun TodoList(
   modifier: Modifier = Modifier,
   onToggleDone: (Long, Boolean) -> Unit,
   onOpenTodo: (Long) -> Unit,
+  onLongPress: (Todo) -> Unit,
 ) {
   LazyColumn(modifier = modifier) {
     items(todos, key = { it.id }) { todo ->
-      TodoRow(todo = todo, onToggleDone = onToggleDone, onOpenTodo = onOpenTodo)
+      TodoRow(
+        todo = todo,
+        onToggleDone = onToggleDone,
+        onOpenTodo = onOpenTodo,
+        onLongPress = onLongPress,
+      )
     }
   }
 }
@@ -143,6 +182,7 @@ internal fun TodoRow(
   modifier: Modifier = Modifier,
   onToggleDone: (Long, Boolean) -> Unit = { _, _ -> },
   onOpenTodo: (Long) -> Unit = {},
+  onLongPress: (Todo) -> Unit = {},
 ) {
   Row(
     modifier = modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -155,7 +195,10 @@ internal fun TodoRow(
     val contentModifier =
       Modifier
         .padding(vertical = 8.dp, horizontal = 4.dp)
-        .clickable { onOpenTodo(todo.id) }
+        .combinedClickable(
+          onClick = { onOpenTodo(todo.id) },
+          onLongClick = { onLongPress(todo) },
+        )
         .alpha(if (todo.isDone) 0.5f else 1f)
         .then(
           if (todo.isDone) {

@@ -13,6 +13,7 @@ internal class FakeTodoRepository(
   val setDoneCalls = mutableListOf<Pair<Long, Boolean>>()
   val inserted = mutableListOf<Todo>()
   val updated = mutableListOf<Todo>()
+  val deletedById = mutableListOf<Long>()
 
   override val todos: Flow<List<Todo>> =
     flow {
@@ -35,5 +36,7 @@ internal class FakeTodoRepository(
     setDoneCalls += id to isDone
   }
 
-  override suspend fun deleteById(id: Long) = Unit
+  override suspend fun deleteById(id: Long) {
+    deletedById += id
+  }
 }
