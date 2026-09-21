@@ -69,4 +69,62 @@ class TodoDetailViewModelTest {
     advanceUntilIdle()
     assertEquals(1, repository.inserted.size)
   }
+
+  @Test
+  fun existingTodo_seedsFieldsFromDatabase() = runTest(dispatcher) {
+    val existing = Todo(id = 42, title = "Original title", description = "Original desc", isDone = true)
+    val repository = FakeTodoRepository(seed = listOf(existing))
+    val viewModel = TodoDetailViewModel(todoId = 42, todoRepository = repository)
+
+    advanceUntilIdle()
+    assertEquals("Original title", viewModel.title.value)
+    assertEquals("Original desc", viewModel.description.value)
+  }
+
+  @Test
+  fun save_existingTodo_updatesRowInsteadOfInserting() = runTest(dispatcher) {
+    val existing = Todo(id = 42, title = "Original title", description = "Original desc")
+    val repository = FakeTodoRepository(seed = listOf(existing))
+    val viewModel = TodoDetailViewModel(todoId = 42, todoRepository = repository)
+
+    advanceUntilIdle()
+    viewModel.onTitleChange("Updated title")
+    viewModel.onDescriptionChange("  Updated desc ")
+    viewModel.save()
+
+    advanceUntilIdle()
+    assertEquals(
+      listOf(Todo(id = 42, title = "Updated title", description = "Updated desc")),
+      repository.updated,
+    )
+    assertEquals(emptyList<Todo>(), repository.inserted)
+  }
+
+  @Test
+  fun save_existingTodo_preservesDoneState() = runTest(dispatcher) {
+    val existing = Todo(id = 42, title = "Original title", description = "Original desc", isDone = true)
+    val repository = FakeTodoRepository(seed = listOf(existing))
+    val viewModel = TodoDetailViewModel(todoId = 42, todoRepository = repository)
+
+    advanceUntilIdle()
+    viewModel.onTitleChange("Updated title")
+    viewModel.save()
+
+    advanceUntilIdle()
+    assertEquals(listOf(existing.copy(title = "Updated title")), repository.updated)
+  }
+
+  @Test
+  fun save_beforeSeedLands_stillUpdatesExistingRow() = runTest(dispatcher) {
+    val existing = Todo(id = 42, title = "Original title", description = "Original desc", isDone = true)
+    val repository = FakeTodoRepository(seed = listOf(existing))
+    val viewModel = TodoDetailViewModel(todoId = 42, todoRepository = repository)
+
+    viewModel.onTitleChange("Typed immediately")
+    viewModel.save()
+
+    advanceUntilIdle()
+    assertEquals(listOf(existing.copy(title = "Typed immediately")), repository.updated)
+    assertEquals(emptyList<Todo>(), repository.inserted)
+  }
 }

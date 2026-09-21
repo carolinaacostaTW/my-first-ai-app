@@ -1,5 +1,6 @@
 package com.example.myfirstaiapp.ui.todo
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,12 +43,14 @@ fun TodoListScreen(
   modifier: Modifier = Modifier,
   viewModel: TodoListViewModel = hiltViewModel(),
   onAddTodo: () -> Unit = {},
+  onOpenTodo: (Long) -> Unit = {},
 ) {
   val uiState by viewModel.uiState.collectAsStateWithLifecycle()
   TodoListScreen(
     uiState = uiState,
     onToggleDone = viewModel::setDone,
     onAddTodo = onAddTodo,
+    onOpenTodo = onOpenTodo,
     modifier = modifier,
   )
 }
@@ -59,6 +62,7 @@ internal fun TodoListScreen(
   modifier: Modifier = Modifier,
   onToggleDone: (id: Long, isDone: Boolean) -> Unit = { _, _ -> },
   onAddTodo: () -> Unit = {},
+  onOpenTodo: (Long) -> Unit = {},
 ) {
   Scaffold(
     modifier = modifier,
@@ -78,7 +82,12 @@ internal fun TodoListScreen(
       TodoListUiState.Empty -> EmptyState(contentModifier)
       is TodoListUiState.Error -> ErrorState(contentModifier)
       is TodoListUiState.Success ->
-        TodoList(todos = uiState.todos, onToggleDone = onToggleDone, modifier = contentModifier)
+        TodoList(
+          todos = uiState.todos,
+          onToggleDone = onToggleDone,
+          onOpenTodo = onOpenTodo,
+          modifier = contentModifier,
+        )
     }
   }
 }
@@ -119,10 +128,11 @@ private fun TodoList(
   todos: List<Todo>,
   modifier: Modifier = Modifier,
   onToggleDone: (Long, Boolean) -> Unit,
+  onOpenTodo: (Long) -> Unit,
 ) {
   LazyColumn(modifier = modifier) {
     items(todos, key = { it.id }) { todo ->
-      TodoRow(todo = todo, onToggleDone = onToggleDone)
+      TodoRow(todo = todo, onToggleDone = onToggleDone, onOpenTodo = onOpenTodo)
     }
   }
 }
@@ -132,6 +142,7 @@ internal fun TodoRow(
   todo: Todo,
   modifier: Modifier = Modifier,
   onToggleDone: (Long, Boolean) -> Unit = { _, _ -> },
+  onOpenTodo: (Long) -> Unit = {},
 ) {
   Row(
     modifier = modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -144,6 +155,7 @@ internal fun TodoRow(
     val contentModifier =
       Modifier
         .padding(vertical = 8.dp, horizontal = 4.dp)
+        .clickable { onOpenTodo(todo.id) }
         .alpha(if (todo.isDone) 0.5f else 1f)
         .then(
           if (todo.isDone) {

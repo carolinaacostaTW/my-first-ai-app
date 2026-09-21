@@ -29,6 +29,7 @@ fun MainNavigation() {
           TodoListScreen(
             modifier = Modifier.fillMaxSize(),
             onAddTodo = { backStack.add(TodoDetail(NEW_TODO_ID)) },
+            onOpenTodo = { todoId -> backStack.add(TodoDetail(todoId)) },
           )
         }
         entry<TodoDetail> { detail ->

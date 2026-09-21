@@ -26,28 +26,40 @@ class TodoDetailViewModel @AssistedInject constructor(
   private val _description = MutableStateFlow("")
   val description = _description.asStateFlow()
 
+  private val isNew = todoId == NEW_TODO_ID
   private var seeded = false
-  private var savedId: Long? = null
+  private var userEdited = false
   private var didSave = false
 
+  // Track explicit user edits so a seed that lands late can neither clobber
+  // the visible fields nor let an untouched field drop back to an empty string.
+  private var titleOverride: String? = null
+  private var descriptionOverride: String? = null
+
   init {
-    if (todoId != NEW_TODO_ID) {
+    if (!isNew) {
       viewModelScope.launch {
-        val existing = todoRepository.observeById(todoId).first()
-        if (existing != null && !seeded) {
+        val loaded = todoRepository.observeById(todoId).first()
+        if (loaded != null && !seeded) {
           seeded = true
-          _title.value = existing.title
-          _description.value = existing.description
+          if (!userEdited) {
+            _title.value = loaded.title
+            _description.value = loaded.description
+          }
         }
       }
     }
   }
 
   fun onTitleChange(value: String) {
+    userEdited = true
+    titleOverride = value
     _title.value = value
   }
 
   fun onDescriptionChange(value: String) {
+    userEdited = true
+    descriptionOverride = value
     _description.value = value
   }
 
@@ -57,15 +69,16 @@ class TodoDetailViewModel @AssistedInject constructor(
     // NonCancellable so the DB write completes even if the entry is popped
     // (its ViewModelStore is cleared) right after this screen leaves composition.
     viewModelScope.launch(NonCancellable) {
-      val title = _title.value.trim()
+      // Re-read the row as the authoritative base so an edit always updates
+      // (never re-inserts) and never loses fields that were untouched.
+      val loaded = if (isNew) null else todoRepository.observeById(todoId).first()
+      val title = (titleOverride ?: loaded?.title ?: _title.value).trim()
       if (title.isBlank()) return@launch
-      val description = _description.value.trim()
-      val existingId = savedId
-      if (existingId != null) {
-        todoRepository.update(Todo(id = existingId, title = title, description = description))
+      val description = (descriptionOverride ?: loaded?.description ?: _description.value).trim()
+      if (loaded != null) {
+        todoRepository.update(loaded.copy(title = title, description = description))
       } else {
-        savedId =
-          todoRepository.insert(Todo(title = title, description = description, isDone = false))
+        todoRepository.insert(Todo(title = title, description = description, isDone = false))
       }
     }
   }

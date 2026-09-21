@@ -65,8 +65,13 @@ class TodoListScreenTest {
 
     val completedStateDescription =
       composeTestRule.activity.getString(R.string.todo_row_completed_state_description)
+    // The row's text is merged into the clickable content node, so the
+    // state description may live on the text node itself or an ancestor.
     composeTestRule.onNodeWithText(TEST_TODO.title)
-      .assert(hasAnyAncestor(hasStateDescription(completedStateDescription)))
+      .assert(
+        hasStateDescription(completedStateDescription) or
+          hasAnyAncestor(hasStateDescription(completedStateDescription)),
+      )
   }
 
   @Test
@@ -79,6 +84,37 @@ class TodoListScreenTest {
       composeTestRule.activity.getString(R.string.todo_row_completed_state_description)
     composeTestRule.onNodeWithText(TEST_TODO.title)
       .assert(!hasAnyAncestor(hasStateDescription(completedStateDescription)))
+  }
+
+  @Test
+  fun rowClick_invokesOpenCallback() {
+    val opened = mutableListOf<Long>()
+    composeTestRule.setContent {
+      TodoListScreen(
+        uiState = TodoListUiState.Success(listOf(TEST_TODO)),
+        onOpenTodo = { opened += it },
+      )
+    }
+
+    composeTestRule.onNodeWithText(TEST_TODO.title).performClick()
+
+    assertEquals(listOf(TEST_TODO.id), opened)
+  }
+
+  @Test
+  fun checkboxToggle_doesNotInvokeOpenCallback() {
+    val opened = mutableListOf<Long>()
+    composeTestRule.setContent {
+      TodoListScreen(
+        uiState = TodoListUiState.Success(listOf(TEST_TODO)),
+        onToggleDone = { _, _ -> },
+        onOpenTodo = { opened += it },
+      )
+    }
+
+    composeTestRule.onNode(isToggleable()).performClick()
+
+    assertEquals(emptyList<Long>(), opened)
   }
 
   @Test
