@@ -11,10 +11,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 @HiltViewModel
 class TodoListViewModel @Inject constructor(
-  todoRepository: TodoRepository,
+  private val todoRepository: TodoRepository,
 ) : ViewModel() {
   val uiState: StateFlow<TodoListUiState> =
     todoRepository.todos
@@ -23,6 +24,10 @@ class TodoListViewModel @Inject constructor(
       }
       .catch { emit(TodoListUiState.Error(it)) }
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TodoListUiState.Loading)
+
+  fun setDone(id: Long, isDone: Boolean) {
+    viewModelScope.launch { todoRepository.setDone(id, isDone) }
+  }
 }
 
 sealed interface TodoListUiState {

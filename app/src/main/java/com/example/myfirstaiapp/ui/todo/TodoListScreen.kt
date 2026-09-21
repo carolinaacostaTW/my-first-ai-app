@@ -2,11 +2,13 @@ package com.example.myfirstaiapp.ui.todo
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -17,8 +19,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -33,12 +39,16 @@ fun TodoListScreen(
   viewModel: TodoListViewModel = hiltViewModel(),
 ) {
   val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-  TodoListScreen(uiState = uiState, modifier = modifier)
+  TodoListScreen(uiState = uiState, onToggleDone = viewModel::setDone, modifier = modifier)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun TodoListScreen(uiState: TodoListUiState, modifier: Modifier = Modifier) {
+internal fun TodoListScreen(
+  uiState: TodoListUiState,
+  modifier: Modifier = Modifier,
+  onToggleDone: (id: Long, isDone: Boolean) -> Unit = { _, _ -> },
+) {
   Scaffold(
     modifier = modifier,
     topBar = { TopAppBar(title = { Text(stringResource(R.string.todo_list_title)) }) },
@@ -48,7 +58,8 @@ internal fun TodoListScreen(uiState: TodoListUiState, modifier: Modifier = Modif
       TodoListUiState.Loading -> LoadingState(contentModifier)
       TodoListUiState.Empty -> EmptyState(contentModifier)
       is TodoListUiState.Error -> ErrorState(contentModifier)
-      is TodoListUiState.Success -> TodoList(todos = uiState.todos, modifier = contentModifier)
+      is TodoListUiState.Success ->
+        TodoList(todos = uiState.todos, onToggleDone = onToggleDone, modifier = contentModifier)
     }
   }
 }
@@ -85,24 +96,57 @@ private fun ErrorState(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun TodoList(todos: List<Todo>, modifier: Modifier = Modifier) {
+private fun TodoList(
+  todos: List<Todo>,
+  modifier: Modifier = Modifier,
+  onToggleDone: (Long, Boolean) -> Unit,
+) {
   LazyColumn(modifier = modifier) {
     items(todos, key = { it.id }) { todo ->
-      TodoRow(todo = todo)
+      TodoRow(todo = todo, onToggleDone = onToggleDone)
     }
   }
 }
 
 @Composable
-internal fun TodoRow(todo: Todo, modifier: Modifier = Modifier) {
-  Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-    Text(text = todo.title, style = MaterialTheme.typography.bodyLarge)
-    if (todo.description.isNotBlank()) {
+internal fun TodoRow(
+  todo: Todo,
+  modifier: Modifier = Modifier,
+  onToggleDone: (Long, Boolean) -> Unit = { _, _ -> },
+) {
+  Row(
+    modifier = modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    Checkbox(checked = todo.isDone, onCheckedChange = { isDone -> onToggleDone(todo.id, isDone) })
+    val completedStateDescription =
+      stringResource(R.string.todo_row_completed_state_description)
+    val doneDecoration = if (todo.isDone) TextDecoration.LineThrough else null
+    val contentModifier =
+      Modifier
+        .padding(vertical = 8.dp, horizontal = 4.dp)
+        .alpha(if (todo.isDone) 0.5f else 1f)
+        .then(
+          if (todo.isDone) {
+            Modifier.semantics { stateDescription = completedStateDescription }
+          } else {
+            Modifier
+          },
+        )
+    Column(modifier = contentModifier) {
       Text(
-        text = todo.description,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        text = todo.title,
+        style = MaterialTheme.typography.bodyLarge,
+        textDecoration = doneDecoration,
       )
+      if (todo.description.isNotBlank()) {
+        Text(
+          text = todo.description,
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          textDecoration = doneDecoration,
+        )
+      }
     }
   }
 }

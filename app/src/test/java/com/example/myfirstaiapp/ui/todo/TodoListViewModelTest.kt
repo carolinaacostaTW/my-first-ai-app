@@ -66,12 +66,23 @@ class TodoListViewModelTest {
     assertTrue(viewModel.uiState.value is TodoListUiState.Error)
     job.cancel()
   }
+
+  @Test
+  fun setDone_propagatesToRepository() = runTest(dispatcher) {
+    val repository = FakeTodoRepository(seed = listOf(Todo(id = 7, title = "Buy milk")))
+    val viewModel = TodoListViewModel(repository)
+    viewModel.setDone(7, true)
+    advanceUntilIdle()
+    assertEquals(listOf(7L to true), repository.setDoneCalls)
+  }
 }
 
 private class FakeTodoRepository(
   private val seed: List<Todo> = listOf(Todo(title = "Sample")),
   private val error: Throwable? = null,
 ) : TodoRepository {
+  val setDoneCalls = mutableListOf<Pair<Long, Boolean>>()
+
   override val todos: Flow<List<Todo>> =
     flow {
       error?.let { throw it }
@@ -84,7 +95,9 @@ private class FakeTodoRepository(
 
   override suspend fun update(todo: Todo) = Unit
 
-  override suspend fun setDone(id: Long, isDone: Boolean) = Unit
+  override suspend fun setDone(id: Long, isDone: Boolean) {
+    setDoneCalls += id to isDone
+  }
 
   override suspend fun deleteById(id: Long) = Unit
 }
