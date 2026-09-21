@@ -2,11 +2,13 @@ plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
+  alias(libs.plugins.ksp)
+  alias(libs.plugins.hilt)
 }
 
 android {
     namespace = "com.example.myfirstaiapp"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId = "com.example.myfirstaiapp"
         minSdk = 24
@@ -41,6 +43,10 @@ android {
 
 kotlin {
     jvmToolchain(17)
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -81,4 +87,14 @@ dependencies {
   implementation(libs.androidx.navigation3.ui)
   implementation(libs.androidx.navigation3.runtime)
   implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+
+  // Dependency injection
+  implementation(libs.hilt.android)
+  implementation(libs.androidx.hilt.navigation.compose)
+  ksp(libs.hilt.compiler)
+
+  // Room
+  implementation(libs.room.runtime)
+  implementation(libs.room.ktx)
+  ksp(libs.room.compiler)
 }

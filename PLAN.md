@@ -28,7 +28,13 @@ scaffold (greeting screen) — this plan replaces that with the real feature.
 - **Hilt** for dependency injection.
 - Completed to-dos use **strikethrough + dimmed**, keeping position in the list.
 
-## Version pins (verified for toolchain Kotlin 2.3.20 / AGP 9.0.1 / KSP2)
+## Version pins (verified for toolchain Kotlin 2.3.20 / AGP 9.1.1 / KSP2)
+
+> Updated during S1: `androidx.hilt:hilt-navigation-compose:1.4.0` (pinned below) requires
+> AGP >= 9.1 and compileSdk 37, so the toolchain was bumped from the originally planned
+> AGP 9.0.1 / compileSdk 36 / Gradle 9.1.0 → AGP 9.1.1 / compileSdk 37 / Gradle 9.3.1.
+> `hiltViewModel()` now lives in `androidx.hilt.lifecycle.viewmodel.compose` (pulled from
+> `hilt-navigation-compose`). `targetSdk` stays 36.
 
 | Dependency | Version | Notes |
 | --- | --- | --- |
