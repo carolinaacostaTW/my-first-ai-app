@@ -8,9 +8,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -37,9 +41,15 @@ import com.example.myfirstaiapp.theme.MyFirstAIAppTheme
 fun TodoListScreen(
   modifier: Modifier = Modifier,
   viewModel: TodoListViewModel = hiltViewModel(),
+  onAddTodo: () -> Unit = {},
 ) {
   val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-  TodoListScreen(uiState = uiState, onToggleDone = viewModel::setDone, modifier = modifier)
+  TodoListScreen(
+    uiState = uiState,
+    onToggleDone = viewModel::setDone,
+    onAddTodo = onAddTodo,
+    modifier = modifier,
+  )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,10 +58,19 @@ internal fun TodoListScreen(
   uiState: TodoListUiState,
   modifier: Modifier = Modifier,
   onToggleDone: (id: Long, isDone: Boolean) -> Unit = { _, _ -> },
+  onAddTodo: () -> Unit = {},
 ) {
   Scaffold(
     modifier = modifier,
     topBar = { TopAppBar(title = { Text(stringResource(R.string.todo_list_title)) }) },
+    floatingActionButton = {
+      FloatingActionButton(onClick = onAddTodo) {
+        Icon(
+          imageVector = Icons.Default.Add,
+          contentDescription = stringResource(R.string.todo_list_add),
+        )
+      }
+    },
   ) { innerPadding ->
     val contentModifier = Modifier.fillMaxSize().padding(innerPadding)
     when (uiState) {

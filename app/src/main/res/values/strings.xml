@@ -3,5 +3,11 @@
     <string name="todo_list_title">To-dos</string>
     <string name="todo_list_empty">No to-dos yet. Add one soon!</string>
     <string name="todo_list_error">Something went wrong loading your to-dos.</string>
+    <string name="todo_list_add">Add to-do</string>
     <string name="todo_row_completed_state_description">Completed</string>
+    <string name="todo_detail_new_title">New to-do</string>
+    <string name="todo_detail_edit_title">Edit to-do</string>
+    <string name="todo_detail_title_label">Title</string>
+    <string name="todo_detail_description_label">Description</string>
+    <string name="todo_detail_back">Back</string>
 </resources>

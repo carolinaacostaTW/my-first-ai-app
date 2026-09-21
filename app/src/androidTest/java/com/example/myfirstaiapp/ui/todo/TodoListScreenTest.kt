@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasStateDescription
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.example.myfirstaiapp.R
@@ -78,6 +79,19 @@ class TodoListScreenTest {
       composeTestRule.activity.getString(R.string.todo_row_completed_state_description)
     composeTestRule.onNodeWithText(TEST_TODO.title)
       .assert(!hasAnyAncestor(hasStateDescription(completedStateDescription)))
+  }
+
+  @Test
+  fun fab_invokesAddCallback() {
+    var added = 0
+    composeTestRule.setContent {
+      TodoListScreen(uiState = TodoListUiState.Empty, onAddTodo = { added++ })
+    }
+
+    val contentDescription = composeTestRule.activity.getString(R.string.todo_list_add)
+    composeTestRule.onNodeWithContentDescription(contentDescription).performClick()
+
+    assertEquals(1, added)
   }
 }
 

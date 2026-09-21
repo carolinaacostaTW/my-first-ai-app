@@ -8,6 +8,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.example.myfirstaiapp.ui.todo.TodoDetailScreen
 import com.example.myfirstaiapp.ui.todo.TodoListScreen
 
 @Composable
@@ -25,7 +26,17 @@ fun MainNavigation() {
     entryProvider =
       entryProvider {
         entry<TodoList> {
-          TodoListScreen(modifier = Modifier.fillMaxSize())
+          TodoListScreen(
+            modifier = Modifier.fillMaxSize(),
+            onAddTodo = { backStack.add(TodoDetail(NEW_TODO_ID)) },
+          )
+        }
+        entry<TodoDetail> { detail ->
+          TodoDetailScreen(
+            todoId = detail.todoId,
+            onBack = { backStack.removeLastOrNull() },
+            modifier = Modifier.fillMaxSize(),
+          )
         }
       },
   )
