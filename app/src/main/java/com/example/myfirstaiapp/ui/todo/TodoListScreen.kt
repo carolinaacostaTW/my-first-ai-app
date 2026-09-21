@@ -135,7 +135,7 @@ internal fun TodoListScreen(
       is TodoListUiState.Error -> ErrorState(contentModifier)
       is TodoListUiState.Success ->
         TodoListContent(
-          todos = uiState.todos,
+          state = uiState,
           onToggleDone = onToggleDone,
           onOpenTodo = onOpenTodo,
           onLongPress = { pendingDelete = it },
@@ -260,21 +260,21 @@ private fun IconBadge(
 
 @Composable
 private fun TodoListContent(
-  todos: List<Todo>,
+  state: TodoListUiState.Success,
   modifier: Modifier = Modifier,
   onToggleDone: (Long, Boolean) -> Unit,
   onOpenTodo: (Long) -> Unit,
   onLongPress: (Todo) -> Unit,
 ) {
   Column(modifier = modifier.fillMaxSize()) {
-    ProgressHeader(todos = todos, modifier = Modifier.padding(horizontal = 16.dp))
+    ProgressHeader(state = state, modifier = Modifier.padding(horizontal = 16.dp))
     Spacer(modifier = Modifier.height(8.dp))
     LazyColumn(
       modifier = Modifier.fillMaxSize(),
       contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 96.dp),
       verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-      items(todos, key = { it.id }) { todo ->
+      items(state.todos, key = { it.id }) { todo ->
         TodoRow(
           todo = todo,
           onToggleDone = onToggleDone,
@@ -287,10 +287,7 @@ private fun TodoListContent(
 }
 
 @Composable
-private fun ProgressHeader(todos: List<Todo>, modifier: Modifier = Modifier) {
-  val total = todos.size
-  val done = todos.count { it.isDone }
-  val progress = if (total == 0) 0f else done.toFloat() / total.toFloat()
+private fun ProgressHeader(state: TodoListUiState.Success, modifier: Modifier = Modifier) {
   Card(
     modifier = modifier.fillMaxWidth(),
     shape = RoundedCornerShape(20.dp),
@@ -300,14 +297,14 @@ private fun ProgressHeader(todos: List<Todo>, modifier: Modifier = Modifier) {
   ) {
     Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
       Text(
-        text = stringResource(R.string.todo_list_progress, done, total),
+        text = stringResource(R.string.todo_list_progress, state.completedCount, state.totalCount),
         style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onPrimaryContainer,
       )
       Spacer(modifier = Modifier.height(12.dp))
       LinearProgressIndicator(
-        progress = { progress },
+        progress = { state.progress },
         modifier = Modifier.fillMaxWidth().height(8.dp),
         color = MaterialTheme.colorScheme.primary,
         trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),

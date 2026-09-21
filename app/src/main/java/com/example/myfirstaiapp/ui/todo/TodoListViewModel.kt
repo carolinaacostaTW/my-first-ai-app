@@ -41,5 +41,10 @@ sealed interface TodoListUiState {
 
   data class Error(val throwable: Throwable) : TodoListUiState
 
-  data class Success(val todos: List<Todo>) : TodoListUiState
+  data class Success(val todos: List<Todo>) : TodoListUiState {
+    val completedCount: Int = todos.count { it.isDone }
+    val totalCount: Int = todos.size
+    val progress: Float =
+      if (totalCount == 0) 0f else completedCount.toFloat() / totalCount.toFloat()
+  }
 }

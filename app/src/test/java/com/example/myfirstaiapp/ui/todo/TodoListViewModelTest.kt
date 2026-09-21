@@ -67,6 +67,28 @@ class TodoListViewModelTest {
   }
 
   @Test
+  fun success_progressReflectsCompletedTodos() {
+    val todos =
+      listOf(
+        Todo(id = 1, title = "Buy milk", isDone = true),
+        Todo(id = 2, title = "Walk the dog", isDone = false),
+        Todo(id = 3, title = "Water plants", isDone = true),
+      )
+    val state = TodoListUiState.Success(todos)
+    assertEquals(2, state.completedCount)
+    assertEquals(3, state.totalCount)
+    assertEquals(2f / 3f, state.progress)
+  }
+
+  @Test
+  fun success_withoutTodos_hasNoProgress() {
+    val state = TodoListUiState.Success(emptyList())
+    assertEquals(0, state.completedCount)
+    assertEquals(0, state.totalCount)
+    assertEquals(0f, state.progress)
+  }
+
+  @Test
   fun uiState_repositoryError_isError() = runTest(dispatcher) {
     val repository = mockk<TodoRepository>(relaxed = true)
     every { repository.todos } returns flow { throw RuntimeException("db down") }
