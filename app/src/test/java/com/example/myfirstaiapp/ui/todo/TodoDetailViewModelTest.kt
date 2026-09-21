@@ -2,9 +2,14 @@ package com.example.myfirstaiapp.ui.todo
 
 import com.example.myfirstaiapp.NEW_TODO_ID
 import com.example.myfirstaiapp.data.todo.Todo
+import com.example.myfirstaiapp.data.todo.TodoRepository
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -30,7 +35,7 @@ class TodoDetailViewModelTest {
 
   @Test
   fun save_insertsNewTodo() = runTest(dispatcher) {
-    val repository = FakeTodoRepository()
+    val repository = mockk<TodoRepository>(relaxed = true)
     val viewModel = TodoDetailViewModel(todoId = NEW_TODO_ID, todoRepository = repository)
 
     viewModel.onTitleChange("Buy milk")
@@ -38,15 +43,14 @@ class TodoDetailViewModelTest {
     viewModel.save()
 
     advanceUntilIdle()
-    assertEquals(
-      listOf(Todo(title = "Buy milk", description = "A carton", isDone = false)),
-      repository.inserted,
-    )
+    coVerify(exactly = 1) {
+      repository.insert(Todo(title = "Buy milk", description = "A carton", isDone = false))
+    }
   }
 
   @Test
   fun save_blankTitle_discardsRow() = runTest(dispatcher) {
-    val repository = FakeTodoRepository()
+    val repository = mockk<TodoRepository>(relaxed = true)
     val viewModel = TodoDetailViewModel(todoId = NEW_TODO_ID, todoRepository = repository)
 
     viewModel.onTitleChange("   ")
@@ -54,12 +58,12 @@ class TodoDetailViewModelTest {
     viewModel.save()
 
     advanceUntilIdle()
-    assertEquals(emptyList<Todo>(), repository.inserted)
+    coVerify(exactly = 0) { repository.insert(any()) }
   }
 
   @Test
   fun save_calledTwice_insertsOnce() = runTest(dispatcher) {
-    val repository = FakeTodoRepository()
+    val repository = mockk<TodoRepository>(relaxed = true)
     val viewModel = TodoDetailViewModel(todoId = NEW_TODO_ID, todoRepository = repository)
 
     viewModel.onTitleChange("Walk the dog")
@@ -67,13 +71,14 @@ class TodoDetailViewModelTest {
     viewModel.save()
 
     advanceUntilIdle()
-    assertEquals(1, repository.inserted.size)
+    coVerify(exactly = 1) { repository.insert(any()) }
   }
 
   @Test
   fun existingTodo_seedsFieldsFromDatabase() = runTest(dispatcher) {
     val existing = Todo(id = 42, title = "Original title", description = "Original desc", isDone = true)
-    val repository = FakeTodoRepository(seed = listOf(existing))
+    val repository = mockk<TodoRepository>(relaxed = true)
+    every { repository.observeById(42) } returns flowOf(existing)
     val viewModel = TodoDetailViewModel(todoId = 42, todoRepository = repository)
 
     advanceUntilIdle()
@@ -84,7 +89,8 @@ class TodoDetailViewModelTest {
   @Test
   fun save_existingTodo_updatesRowInsteadOfInserting() = runTest(dispatcher) {
     val existing = Todo(id = 42, title = "Original title", description = "Original desc")
-    val repository = FakeTodoRepository(seed = listOf(existing))
+    val repository = mockk<TodoRepository>(relaxed = true)
+    every { repository.observeById(42) } returns flowOf(existing)
     val viewModel = TodoDetailViewModel(todoId = 42, todoRepository = repository)
 
     advanceUntilIdle()
@@ -93,17 +99,17 @@ class TodoDetailViewModelTest {
     viewModel.save()
 
     advanceUntilIdle()
-    assertEquals(
-      listOf(Todo(id = 42, title = "Updated title", description = "Updated desc")),
-      repository.updated,
-    )
-    assertEquals(emptyList<Todo>(), repository.inserted)
+    coVerify(exactly = 1) {
+      repository.update(Todo(id = 42, title = "Updated title", description = "Updated desc"))
+    }
+    coVerify(exactly = 0) { repository.insert(any()) }
   }
 
   @Test
   fun save_existingTodo_preservesDoneState() = runTest(dispatcher) {
     val existing = Todo(id = 42, title = "Original title", description = "Original desc", isDone = true)
-    val repository = FakeTodoRepository(seed = listOf(existing))
+    val repository = mockk<TodoRepository>(relaxed = true)
+    every { repository.observeById(42) } returns flowOf(existing)
     val viewModel = TodoDetailViewModel(todoId = 42, todoRepository = repository)
 
     advanceUntilIdle()
@@ -111,20 +117,21 @@ class TodoDetailViewModelTest {
     viewModel.save()
 
     advanceUntilIdle()
-    assertEquals(listOf(existing.copy(title = "Updated title")), repository.updated)
+    coVerify(exactly = 1) { repository.update(existing.copy(title = "Updated title")) }
   }
 
   @Test
   fun save_beforeSeedLands_stillUpdatesExistingRow() = runTest(dispatcher) {
     val existing = Todo(id = 42, title = "Original title", description = "Original desc", isDone = true)
-    val repository = FakeTodoRepository(seed = listOf(existing))
+    val repository = mockk<TodoRepository>(relaxed = true)
+    every { repository.observeById(42) } returns flowOf(existing)
     val viewModel = TodoDetailViewModel(todoId = 42, todoRepository = repository)
 
     viewModel.onTitleChange("Typed immediately")
     viewModel.save()
 
     advanceUntilIdle()
-    assertEquals(listOf(existing.copy(title = "Typed immediately")), repository.updated)
-    assertEquals(emptyList<Todo>(), repository.inserted)
+    coVerify(exactly = 1) { repository.update(existing.copy(title = "Typed immediately")) }
+    coVerify(exactly = 0) { repository.insert(any()) }
   }
 }
